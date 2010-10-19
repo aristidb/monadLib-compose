@@ -29,7 +29,7 @@ Author:              Aristid Breitkreuz
 Maintainer:          aristidb@googlemail.com
 
 -- A copyright notice.
--- Copyright:           
+Copyright:           Copyright (C) 2010 Aristid Breitkreuz
 
 Category:            Monads, Control
 
@@ -37,18 +37,20 @@ Build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or
 -- a README.
--- Extra-source-files:  
+Extra-source-files:  README
 
 -- Constraint on the version of Cabal needed to build this package.
-Cabal-version:       >=1.2
+Cabal-version:       >=1.8
 
 
 Library
   -- Modules exported by the library.
-  -- Exposed-modules:     
+  Exposed-modules:     MonadLib.Compose
   
   -- Packages needed in order to build this package.
-  -- Build-depends:       
+  Build-depends:
+                       base >=4 && <5,
+                       monadLib ==3.6.*
   
   -- Modules not exported by this package.
   -- Other-modules:       

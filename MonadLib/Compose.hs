@@ -28,6 +28,7 @@ where
 import Data.Monoid
 import MonadLib
 import MonadLib.Derive
+import MonadLib.Monads
 
 -- | Alias for 'ask'. Compare with 'Control.Category.id'.
 mid :: ReaderM m s => m s
@@ -59,6 +60,9 @@ instance Monad m => ComposeM (ReaderT s m) (ReaderT t m) s t where
     mcompose m n = do
       s <- n
       lift (runReaderT s m)
+
+instance ComposeM (Reader s) (Reader t) s t where
+    mcompose m n = asks $ flip runReader m . flip runReader n
 
 derive_mcompose close open m n = do
   s <- n

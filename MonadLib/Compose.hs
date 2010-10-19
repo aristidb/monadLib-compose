@@ -1,4 +1,27 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, UndecidableInstances #-}
+
+{- |
+Module       : MonadLib.Compose
+Copyright    : 2010 Aristid Breitkreuz
+License      : BSD3
+Stability    : experimental
+Portability  : portable
+
+This module provides Arrow-like monad composition for monadLib. To be more precise, it is "Category-like",
+i.e. the parallels are to 'Control.Category.Category'.
+
+'Control.Category.Category' generalises '.' and 'id' to arrows and categories. One such arrow is 'Kleisli',
+which represents functions returning monadic values. Incidentally, that's equivalent to 'ReaderT'! So it
+turns out that it is possible to generalise '.' and 'id' to 'ReaderT' ('id' is just 'ask'), as well as to
+many monad transformer stacks that embed a 'ReaderT' inside.
+
+The motivation to create this module was a nagging feeling when reading the documentation for @hxt@ and @HaXml@:
+composing filters is very nice, but the abundance of constant arrows, and the lack of access to the very extensive
+set of monad combinators, leads to duplicated effort and unwieldy code (in my humble opinion). I think it is
+possible to gain similar functionality with a stack of monad transformers including 'ReaderT', and 'ComposeM',
+presented here.
+-}
+
 module MonadLib.Compose
 where
   
@@ -6,16 +29,25 @@ import Data.Monoid
 import MonadLib
 import MonadLib.Derive
 
+-- | Alias for 'ask'. Compare with 'Control.Category.id'.
 mid :: ReaderM m s => m s
 mid = ask
 
+-- | Composable monads. Compare with 'Control.Category.Category'.
+-- Note that there are two different monad types involved in each instance.
 class (Monad m, Monad n) => ComposeM m n s t | m -> s, n -> t, n s -> m where
+    -- | Compose two monadic values from right to left. @mcompose f g@ is 
+    -- comparable to @f . g@ but for monadic values. Compare with 'Control.Category..'.
     mcompose :: m a -> n s -> n a
 
+-- | Compose two monadic values from right to left. Compare with 'Control.Category.<<<'.
+-- @f <<< g@ is equivalent to @mcompose f g@.
 (<<<) :: ComposeM m n s t => m a -> n s -> n a
 (<<<) = mcompose
 infixr 1 <<<
 
+-- | Compose two monadic values from left to right. Compare with 'Control.Category.>>>'.
+-- @g >>> f@ is equivalent to @mcompose f g@.
 (>>>) :: ComposeM m n s t => n s -> m a -> n a
 (>>>) = flip mcompose
 infixl 1 >>>

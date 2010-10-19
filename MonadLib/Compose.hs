@@ -9,7 +9,7 @@ import MonadLib.Derive
 mid :: ReaderM m s => m s
 mid = ask
 
-class (Monad m, Monad n, ReaderM m s, ReaderM n t) => ComposeM m n s t | m -> s, n -> t, n s -> m where
+class (Monad m, Monad n) => ComposeM m n s t | m -> s, n -> t, n s -> m where
     mcompose :: m a -> n s -> n a
 
 (<<<) :: ComposeM m n s t => m a -> n s -> n a
@@ -20,11 +20,8 @@ infixr 1 <<<
 (>>>) = flip mcompose
 infixl 1 >>>
 
-{-
--- No ReaderM for (->)...
 instance ComposeM ((->) s) ((->) t) s t where
     mcompose = (.)
--}
 
 instance Monad m => ComposeM (ReaderT s m) (ReaderT t m) s t where
     mcompose m n = do

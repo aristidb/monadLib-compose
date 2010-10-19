@@ -23,6 +23,12 @@ presented here.
 -}
 
 module MonadLib.Compose
+(
+  mid
+, ComposeM(..)
+, (<<<)
+, (>>>)
+)
 where
   
 import Data.Monoid

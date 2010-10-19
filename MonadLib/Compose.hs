@@ -52,3 +52,11 @@ instance ComposeM m n s t => ComposeM (StateT i m) (StateT i n) s t where
       (u, i') <- lift $ mcompose (runStateT i m) (return s)
       set i'
       return u
+
+instance ComposeM m n s t => ComposeM (ChoiceT m) (ChoiceT n) s t where
+    mcompose m n = do
+      s <- n
+      u <- lift $ mcompose (runChoiceT m) (return s)
+      case u of
+        Nothing -> mzero
+        Just (a, m') -> return a `mplus` (mcompose m' (return s))

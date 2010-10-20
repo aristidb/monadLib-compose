@@ -28,11 +28,14 @@ module MonadLib.Compose
 , ComposeM(..)
 , (<<<)
 , (>>>)
+, derive_mcompose
+, derive_mapply
 )
 where
   
 import Data.Monoid
 import MonadLib
+import MonadLib.Derive
 import MonadLib.Monads
 
 -- | Alias for 'ask'. Compare with 'Control.Category.id'.
@@ -62,6 +65,12 @@ infixr 1 <<<
 (>>>) :: ComposeM m n s t => n s -> m a -> n a
 (>>>) = flip mcompose
 infixl 1 >>>
+
+derive_mcompose :: ComposeM m n s t => Iso m o -> Iso n p -> o a -> p s -> p a
+derive_mcompose (Iso _ openM) (Iso closeN openN) m n = closeN $ mcompose (openM m) (openN n)
+
+derive_mapply :: ComposeM m n s t => Iso m o -> Iso n p -> o a -> s -> p a
+derive_mapply (Iso _ openM) (Iso closeN _) m s = closeN $ mapply (openM m) s
 
 instance ComposeM ((->) s) ((->) t) s t where
     mcompose = (.)

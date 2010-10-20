@@ -33,7 +33,6 @@ where
   
 import Data.Monoid
 import MonadLib
-import MonadLib.Derive
 import MonadLib.Monads
 
 -- | Alias for 'ask'. Compare with 'Control.Category.id'.
@@ -46,6 +45,11 @@ class (Monad m, Monad n) => ComposeM m n s t | m -> s, n -> t, n s -> m where
     -- | Compose two monadic values from right to left. @mcompose f g@ is 
     -- comparable to @f . g@ but for monadic values. Compare with 'Control.Category..'.
     mcompose :: m a -> n s -> n a
+    mcompose m n = mapply m =<< n
+    
+    -- | Apply a constant value to a composable monad.
+    mapply :: m a -> s -> n a
+    mapply m s = mcompose m (return s)
 
 -- | Compose two monadic values from right to left. Compare with 'Control.Category.<<<'.
 -- @f <<< g@ is equivalent to @mcompose f g@.
@@ -63,39 +67,36 @@ instance ComposeM ((->) s) ((->) t) s t where
     mcompose = (.)
 
 instance Monad m => ComposeM (ReaderT s m) (ReaderT t m) s t where
-    mcompose m n = do
-      s <- n
-      lift (runReaderT s m)
+    mapply m s = lift (runReaderT s m)
 
 instance ComposeM (Reader s) (Reader t) s t where
     mcompose m n = asks $ flip runReader m . flip runReader n
 
-derive_mcompose close open m n = do
-  s <- n
-  u <- lift $ mcompose (open m) (return s)
+x_mapply :: (MonadT xt, ComposeM m n s t, Monad (xt n)) 
+            => (a -> xt n b) -> (c -> m a) -> c -> s -> xt n b
+x_mapply close open m s = do
+  u <- lift $ mapply (open m) s
   close u
 
 instance ComposeM m n s t => ComposeM (IdT m) (IdT n) s t where
-    mcompose = derive_mcompose return runIdT
+    mapply = x_mapply return runIdT
 
 instance (ComposeM m n s t, Monoid w) => ComposeM (WriterT w m) (WriterT w n) s t where
-    mcompose = derive_mcompose puts runWriterT
+    mapply = x_mapply puts runWriterT
 
 instance ComposeM m n s t => ComposeM (ExceptionT e m) (ExceptionT e n) s t where
-    mcompose = derive_mcompose raises runExceptionT
+    mapply = x_mapply raises runExceptionT
 
 instance ComposeM m n s t => ComposeM (StateT i m) (StateT i n) s t where
-    mcompose m n = do
-      s <- n
+    mapply m s = do
       i <- get
-      (u, i') <- lift $ mcompose (runStateT i m) (return s)
+      (u, i') <- lift $ mapply (runStateT i m) s
       set i'
       return u
 
 instance ComposeM m n s t => ComposeM (ChoiceT m) (ChoiceT n) s t where
-    mcompose m n = do
-      s <- n
-      u <- lift $ mcompose (runChoiceT m) (return s)
+    mapply m s = do
+      u <- lift $ mapply (runChoiceT m) s
       case u of
         Nothing -> mzero
-        Just (a, m') -> return a `mplus` (mcompose m' (return s))
+        Just (a, m') -> return a `mplus` (mapply m' s)

@@ -73,10 +73,8 @@ instance ComposeM (Reader s) (Reader t) s t where
     mcompose m n = asks $ flip runReader m . flip runReader n
 
 x_mapply :: (MonadT xt, ComposeM m n s t, Monad (xt n)) 
-            => (a -> xt n b) -> (c -> m a) -> c -> s -> xt n b
-x_mapply close open m s = do
-  u <- lift $ mapply (open m) s
-  close u
+            => (a -> xt n b) -> (xt m c -> m a) -> xt m c -> s -> xt n b
+x_mapply close open m s = lift (open m `mapply` s) >>= close
 
 instance ComposeM m n s t => ComposeM (IdT m) (IdT n) s t where
     mapply = x_mapply return runIdT
